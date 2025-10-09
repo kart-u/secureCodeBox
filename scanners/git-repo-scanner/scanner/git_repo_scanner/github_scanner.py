@@ -75,6 +75,7 @@ class GitHubScanner(AbstractScanner):
             if is_over:
                 break
             is_over=self._process_repos_page(findings, repos.get_page(i), start_time, end_time)
+            
         return findings
 
     def _process_repos_page(
@@ -87,6 +88,7 @@ class GitHubScanner(AbstractScanner):
         repo: Repository
         for repo in repos:
             if repo.id not in self._ignore_repos:
+                
                 self._respect_github_ratelimit()
                 self.LOGGER.info(
                     f"{len(findings) + 1} - Name: {repo.name} - LastUpdate: {repo.updated_at} - LastPush: {repo.pushed_at}"
@@ -119,11 +121,11 @@ class GitHubScanner(AbstractScanner):
                         pushed_at = pushed_at.replace(tzinfo=timezone.utc)
                 
                         if start_time and end_time:
-                            return start_time < pushed_at < end_time
+                            return start_time <= pushed_at <= end_time
                         elif start_time:
-                            return pushed_at > start_time
+                            return pushed_at >= start_time
                         elif end_time:
-                            return pushed_at < end_time
+                            return pushed_at <= end_time
                         else:
                             return True
     def _respect_github_ratelimit(self):
