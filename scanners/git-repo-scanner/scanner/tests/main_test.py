@@ -1,10 +1,10 @@
-
 # SPDX-FileCopyrightText: the secureCodeBox authors
 #
 # SPDX-License-Identifier: Apache-2.0
 
 import unittest
 from unittest.mock import patch
+from pathlib import Path
 
 from git_repo_scanner.__main__ import get_parser_args, process
 
@@ -16,13 +16,16 @@ class MainTests(unittest.TestCase):
                 "--git-type",
                 "github",
                 "--file-output",
-                "output.json",
+                "mock_file.json",
                 "--organization",
                 "test-org",
             ]
         )
         self.assertEqual(args.git_type, "github")
-        self.assertEqual(args.file_output, "output.json")
+        self.assertEqual(
+            args.file_output,
+            Path("/home/kartu/projects/opensource/secureCodeBox/mock_file.json"),
+        )
         self.assertEqual(args.organization, "test-org")
 
     @patch("git_repo_scanner.github_scanner.GitHubScanner.process")
@@ -32,7 +35,7 @@ class MainTests(unittest.TestCase):
                 "--git-type",
                 "github",
                 "--file-output",
-                "output.json",
+                "mock_file.json",
                 "--organization",
                 "test-org",
             ]
@@ -47,7 +50,7 @@ class MainTests(unittest.TestCase):
                 "--git-type",
                 "gitlab",
                 "--file-output",
-                "output.json",
+                "mock_file.json",
                 "--group",
                 "123",
                 "--url",

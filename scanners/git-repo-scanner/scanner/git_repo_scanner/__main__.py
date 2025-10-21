@@ -11,10 +11,9 @@ from pathlib import Path
 
 import github
 import gitlab
-import pytz
 
 # https://pypi.org/project/pytimeparse/
-from pytimeparse2 import parse as timeparse
+from timelength import Guess, TimeLength
 
 from git_repo_scanner.abstract_scanner import AbstractScanner
 from git_repo_scanner.github_scanner import GitHubScanner
@@ -25,18 +24,12 @@ logging.basicConfig(level=logging.INFO, format=log_format)
 logger = logging.getLogger("git_repo_scanner")
 
 
-
 def main():
     args = get_parser_args()
 
     if not args.git_type:
         logger.info("Argument error: No git type specified")
         sys.exit(1)
-
-    if not args.file_output:
-        logger.info("Argument error: No path for output file specified")
-        sys.exit(1)
-
 
     findings = process(args)
 
@@ -100,14 +93,34 @@ def write_findings_to_file(args, findings):
 
 def parse_duration_as_datetime(val: str):
     try:
-        parsed = timeparse(val)
-        if parsed is None:
+        guess = Guess()
+        tl = TimeLength(val, locale=guess)
+        if not tl.result.success:
             raise argparse.ArgumentTypeError(f"Not a valid duration: {val}.")
-        delta = timedelta(seconds=parsed)
+        delta = timedelta(seconds=tl.result.seconds)
         now_utc = datetime.now(timezone.utc)
         return now_utc - delta
     except Exception:
         raise argparse.ArgumentTypeError(f"Not a valid duration: {val}.")
+
+
+def is_or_can_be_a_file(value: str) -> Path:
+
+    path = Path(value)
+    if path.exists() and not path.is_file():
+        raise argparse.ArgumentTypeError(f"{value} exists and is not a file.")
+
+    parent = path.parent
+    if not parent.exists():
+        raise argparse.ArgumentTypeError(
+            f"The parent directory '{parent}' does not exist. Cannot create '{value}'."
+        )
+    if not parent.is_dir():
+        raise argparse.ArgumentTypeError(
+            f"The parent path '{parent}' is not a directory."
+        )
+
+    return path.resolve()
 
 
 def get_parser_args(args=None):
@@ -123,19 +136,16 @@ def get_parser_args(args=None):
         required=True,
     )
     parser.add_argument(
-        "--file-output", 
-        help="The path of the output file", 
-        required=True
+        "--file-output",
+        help="The path of the output file",
+        required=True,
+        type=is_or_can_be_a_file,
     ),
     parser.add_argument(
-        "--url", 
-        help="The GitLab url or a GitHub enterprise api url.", 
-        required=False
+        "--url", help="The GitLab url or a GitHub enterprise api url.", required=False
     )
     parser.add_argument(
-        "--access-token", 
-        help="An access token for authentication", 
-        required=False
+        "--access-token", help="An access token for authentication", required=False
     )
     parser.add_argument(
         "--organization",
@@ -143,10 +153,7 @@ def get_parser_args(args=None):
         required=False,
     )
     parser.add_argument(
-        "--group", 
-        help="The id of the GitLab group to scan", 
-        required=False,
-        type=int
+        "--group", help="The id of the GitLab group to scan", required=False, type=int
     )
     parser.add_argument(
         "--ignore-repos",
@@ -155,7 +162,7 @@ def get_parser_args(args=None):
         nargs="+",
         default=[],
         required=False,
-        type=int
+        type=int,
     )
     parser.add_argument(
         "--ignore-groups",
@@ -164,14 +171,14 @@ def get_parser_args(args=None):
         nargs="+",
         default=[],
         required=False,
-        type=int
+        type=int,
     )
     parser.add_argument(
         "--obey-rate-limit",
         help="True to obey the rate limit of the GitLab or GitHub server (default), otherwise False",
         default=True,
         required=False,
-        type=bool
+        type=bool,
     )
     parser.add_argument(
         "--annotate-latest-commit-id",
@@ -179,7 +186,7 @@ def get_parser_args(args=None):
         "Will result in up to two extra API hits per repository",
         default=False,
         required=False,
-        type=bool
+        type=bool,
     )
     parser.add_argument(
         "--activity-since-duration",

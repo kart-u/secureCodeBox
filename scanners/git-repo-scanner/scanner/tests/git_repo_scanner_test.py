@@ -217,7 +217,6 @@ class GitRepoScannerTests(unittest.TestCase):
         self.assertEqual(5, len(findings), msg="There should be exactly 5 findings")
         self.assertEqual(findings[0]["attributes"]["last_commit_id"], "deadbeef")
 
-
     @patch("github.Github")
     @patch("github.Organization")
     @patch("github.PaginatedList")
@@ -230,11 +229,13 @@ class GitRepoScannerTests(unittest.TestCase):
         )
         repos = assemble_repos()
         print(repos)
-        repos.sort(key=lambda r: r.pushed_at,reverse=True)
+        repos.sort(key=lambda r: r.pushed_at, reverse=True)
         create_mocks(github_mock, org_mock, pag_mock, repos)
         scanner._gh = github_mock
         # when
-        findings = scanner._process_repos(datetime.datetime(2020, 5, 17, tzinfo=timezone.utc), None)
+        findings = scanner._process_repos(
+            datetime.datetime(2020, 5, 17, tzinfo=timezone.utc), None
+        )
         # then
         github_mock.get_organization.assert_called_with("org")
         self.assertEqual(5, len(findings), msg="There should be exactly 5 findings")
@@ -257,7 +258,9 @@ class GitRepoScannerTests(unittest.TestCase):
         create_mocks(github_mock, org_mock, pag_mock, repos)
         scanner._gh = github_mock
         # when
-        findings = scanner._process_repos(None, datetime.datetime(2020, 5, 17, tzinfo=timezone.utc))
+        findings = scanner._process_repos(
+            None, datetime.datetime(2020, 5, 17, tzinfo=timezone.utc)
+        )
         # then
         github_mock.get_organization.assert_called_with("org")
         self.assertEqual(5, len(findings), msg="There should be exactly 5 findings")
@@ -276,19 +279,20 @@ class GitRepoScannerTests(unittest.TestCase):
             "url", "token", "org", [], False, annotate_latest_commit_id=True
         )
         repos = assemble_repos()
-        repos.sort(key=lambda r: r.pushed_at,reverse=True)
+        repos.sort(key=lambda r: r.pushed_at, reverse=True)
         create_mocks(github_mock, org_mock, pag_mock, repos)
         scanner._gh = github_mock
         # when
-        findings = scanner._process_repos(datetime.datetime(2020, 5, 6, tzinfo=timezone.utc)
-                                          ,datetime.datetime(2020, 5, 19, tzinfo=timezone.utc))
+        findings = scanner._process_repos(
+            datetime.datetime(2020, 5, 6, tzinfo=timezone.utc),
+            datetime.datetime(2020, 5, 19, tzinfo=timezone.utc),
+        )
         # then
         github_mock.get_organization.assert_called_with("org")
         self.assertEqual(4, len(findings), msg="There should be exactly 4 findings")
         expected_ids = {"1", "2", "3", "4"}
         actual_ids = {finding["attributes"]["id"] for finding in findings}
         self.assertEqual(expected_ids, actual_ids)
-
 
     def test_setup_github_with_url_and_no_token_should_exit(self):
         # when
@@ -450,7 +454,7 @@ def assemble_repos():
         archived=True,
         topics=["outdated"],
     )
-    
+
     project4 = assemble_repository(
         p_id=4,
         name="name4",
@@ -537,9 +541,6 @@ def assemble_repository(
     return repo
 
 
-
-
-
 class GitHubScannerTimeFrameTests(unittest.TestCase):
     def test_check_repo_is_in_time_frame_in_frame(self):
         # given
@@ -607,6 +608,3 @@ class GitLabScannerTimeFrameTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-
